@@ -35,11 +35,15 @@
     <PropertyGroup>
       <PackageId Condition="'$(PackageId)' != 'JetBrains.$(JbUpstreamPackageId)'">JetBrains.$(JbUpstreamPackageId)</PackageId>
       <PackageValidationBaselineName>$(JbUpstreamPackageId)</PackageValidationBaselineName>
-      <PackageVersion>$(MinVerMajor).$(MinVerMinor).$([MSBuild]::Add($(MinVerPatch), 1)).$(JbForkRevision)</PackageVersion>
+      <!-- MinVer already increments the patch for commits after a tag; subtract that increment to recover the upstream release patch. -->
+      <JbUpstreamPatch Condition="'$(MinVerPreRelease)' == ''">$(MinVerPatch)</JbUpstreamPatch>
+      <JbUpstreamPatch Condition="'$(MinVerPreRelease)' != ''">$([MSBuild]::Subtract($(MinVerPatch), 1))</JbUpstreamPatch>
+      <JbForkPatch>$([MSBuild]::Add($(JbUpstreamPatch), 1))</JbForkPatch>
+      <PackageVersion>$(MinVerMajor).$(MinVerMinor).$(JbForkPatch).$(JbForkRevision)</PackageVersion>
       <Version>$(PackageVersion)</Version>
       <!-- The strong-name assembly identity stays upstream's; file version distinguishes fork builds. -->
       <FileVersion>$(PackageVersion)</FileVersion>
-      <PackageValidationBaselineVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</PackageValidationBaselineVersion>
+      <PackageValidationBaselineVersion>$(MinVerMajor).$(MinVerMinor).$(JbUpstreamPatch)</PackageValidationBaselineVersion>
     </PropertyGroup>
   </Target>
 
