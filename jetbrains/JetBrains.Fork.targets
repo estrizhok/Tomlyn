@@ -1,0 +1,57 @@
+<Project>
+  <!--
+    Builds only Tomlyn.Signed for netstandard2.0 against the JetBrains main-solution package lock.
+    The upstream Tomlyn source generator remains on its own dependency versions; only the shipped library's runtime references are locked.
+  -->
+  <PropertyGroup>
+    <JbForkDir>$(MSBuildThisFileDirectory)</JbForkDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Tomlyn.Signed'">
+    <JbIsLockedProject>true</JbIsLockedProject>
+  </PropertyGroup>
+
+  <Import Project="$(JbPackageLockFile)" Condition="'$(JbIsLockedProject)' == 'true'" />
+
+  <ItemGroup Condition="'$(JbIsLockedProject)' == 'true'">
+    <!-- Use the main solution's exact versions for every package in the signed library's restore graph. -->
+    <PackageVersion Remove="@(PackageLock)" />
+    <PackageVersion Include="@(PackageLock)" />
+    <!-- The SDK supplies this package implicitly; central package management rejects a PackageVersion for it (NU1009). -->
+    <PackageVersion Remove="NETStandard.Library" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(JbIsLockedProject)' == 'true'">
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(JbIsLockedProject)' == 'true'">
+    <JbUpstreamPackageId>$(PackageId)</JbUpstreamPackageId>
+    <JbForkRevision Condition="'$(JbForkRevision)' == ''">1</JbForkRevision>
+  </PropertyGroup>
+
+  <Target Name="JbSetForkVersion" AfterTargets="MinVer" Condition="('$(JbIsLockedProject)' == 'true') and ('$(IsPackable)' == 'true')">
+    <!-- 2.10.1 becomes 2.10.2.1, leaving a stable, four-component version for every TeamCity rebuild. -->
+    <PropertyGroup>
+      <PackageId Condition="'$(PackageId)' != 'JetBrains.$(JbUpstreamPackageId)'">JetBrains.$(JbUpstreamPackageId)</PackageId>
+      <PackageValidationBaselineName>$(JbUpstreamPackageId)</PackageValidationBaselineName>
+      <PackageVersion>$(MinVerMajor).$(MinVerMinor).$([MSBuild]::Add($(MinVerPatch), 1)).$(JbForkRevision)</PackageVersion>
+      <Version>$(PackageVersion)</Version>
+      <!-- The strong-name assembly identity stays upstream's; file version distinguishes fork builds. -->
+      <FileVersion>$(PackageVersion)</FileVersion>
+      <PackageValidationBaselineVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch)</PackageValidationBaselineVersion>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="JbCheckPackageVersion" BeforeTargets="GenerateNuspec" DependsOnTargets="JbSetForkVersion" Condition="('$(JbIsLockedProject)' == 'true') and ('$(IsPackable)' == 'true')">
+    <Error Condition="$(PackageVersion.Split('.').Length) != 4 or $(PackageVersion.Contains('-')) or $(PackageVersion.StartsWith('0.')) or $(PackageVersion.Contains('.0.')) or $(PackageVersion.EndsWith('.0'))" Text="The fork package version $(PackageVersion), made from upstream $(MinVerVersion), must be stable and have four nonzero components." />
+  </Target>
+
+  <Target Name="JbRenameBuildTransitiveTarget" BeforeTargets="_GetPackageFiles" Condition="('$(JbIsLockedProject)' == 'true') and ('$(IsPackable)' == 'true')">
+    <!-- The upstream buildTransitive filename follows its package ID; keep it consistent with the renamed fork package. -->
+    <ItemGroup>
+      <None Remove="..\Tomlyn\Tomlyn.targets" />
+      <None Include="..\Tomlyn\Tomlyn.targets" Pack="true" PackagePath="buildTransitive/JetBrains.Tomlyn.Signed.targets" />
+    </ItemGroup>
+  </Target>
+</Project>
