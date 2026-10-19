@@ -31,15 +31,14 @@
   </PropertyGroup>
 
   <Target Name="JbSetForkVersion" AfterTargets="MinVer" Condition="('$(JbIsLockedProject)' == 'true') and ('$(IsPackable)' == 'true')">
-    <!-- 2.10.1 becomes 2.10.2.1, leaving a stable, four-component version for every TeamCity rebuild. -->
+    <!-- Preserve the upstream version and append the TeamCity-controlled revision as the fourth component. -->
     <PropertyGroup>
       <PackageId Condition="'$(PackageId)' != 'JetBrains.$(JbUpstreamPackageId)'">JetBrains.$(JbUpstreamPackageId)</PackageId>
       <PackageValidationBaselineName>$(JbUpstreamPackageId)</PackageValidationBaselineName>
       <!-- MinVer already increments the patch for commits after a tag; subtract that increment to recover the upstream release patch. -->
       <JbUpstreamPatch Condition="'$(MinVerPreRelease)' == ''">$(MinVerPatch)</JbUpstreamPatch>
       <JbUpstreamPatch Condition="'$(MinVerPreRelease)' != ''">$([MSBuild]::Subtract($(MinVerPatch), 1))</JbUpstreamPatch>
-      <JbForkPatch>$([MSBuild]::Add($(JbUpstreamPatch), 1))</JbForkPatch>
-      <PackageVersion>$(MinVerMajor).$(MinVerMinor).$(JbForkPatch).$(JbForkRevision)</PackageVersion>
+      <PackageVersion>$(MinVerMajor).$(MinVerMinor).$(JbUpstreamPatch).$(JbForkRevision)</PackageVersion>
       <Version>$(PackageVersion)</Version>
       <!-- The strong-name assembly identity stays upstream's; file version distinguishes fork builds. -->
       <FileVersion>$(PackageVersion)</FileVersion>
@@ -48,7 +47,7 @@
   </Target>
 
   <Target Name="JbCheckPackageVersion" BeforeTargets="GenerateNuspec" DependsOnTargets="JbSetForkVersion" Condition="('$(JbIsLockedProject)' == 'true') and ('$(IsPackable)' == 'true')">
-    <Error Condition="$(PackageVersion.Split('.').Length) != 4 or $(PackageVersion.Contains('-')) or $(PackageVersion.StartsWith('0.')) or $(PackageVersion.Contains('.0.')) or $(PackageVersion.EndsWith('.0'))" Text="The fork package version $(PackageVersion), made from upstream $(MinVerVersion), must be stable and have four nonzero components." />
+    <Error Condition="$(PackageVersion.Split('.').Length) != 4 or $(PackageVersion.Contains('-')) or $(PackageVersion.EndsWith('.0'))" Text="The fork package version $(PackageVersion), made from upstream $(MinVerVersion), must be stable, have four components, and use a nonzero build counter." />
   </Target>
 
   <Target Name="JbRenameBuildTransitiveTarget" BeforeTargets="_GetPackageFiles" Condition="('$(JbIsLockedProject)' == 'true') and ('$(IsPackable)' == 'true')">

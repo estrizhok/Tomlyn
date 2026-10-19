@@ -4,7 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <JbPackageVersion Condition="'$(JbPackageVersion)' == ''">2.10.2.1</JbPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="JetBrains.Tomlyn.Signed" Version="$(JbPackageVersion)" />

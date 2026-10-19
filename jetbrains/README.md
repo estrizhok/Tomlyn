@@ -1,6 +1,6 @@
 # JetBrains fork overlay
 
-Builds the signed `Tomlyn.Signed` library from upstream tag `2.10.1` for `netstandard2.0`, with its runtime package dependencies resolved to the exact versions pinned in the JetBrains main-solution package lock. It packages the result as `JetBrains.Tomlyn.Signed` (`2.10.2.<TeamCity build counter>`); the assembly identity remains the upstream one.
+Builds the signed `Tomlyn.Signed` library from the upstream source for `netstandard2.0`, with its runtime package dependencies resolved to the exact versions pinned in the JetBrains main-solution package lock. It packages the result as `JetBrains.Tomlyn.Signed`, preserving the upstream version and appending the TeamCity build counter as the fourth component; the assembly identity remains the upstream one.
 
 All fork-specific files live in this folder. Upstream source and project files are not edited, so merges remain separate from the overlay. The TeamCity build signs the library and the bundled source generator before packaging.
 
@@ -13,7 +13,7 @@ jetbrains/build.sh pack [-p:JbForkRevision=N]
 jetbrains/verify.sh dotnet [fork-revision]
 ```
 
-`build.sh` uses the bootstrapped .NET 10 SDK unless `JB_DOTNET` names a dotnet executable. The version starts at 2.10.2 because upstream is 2.10.1; the fourth component increments with every TeamCity build counter. The source generator is built with upstream dependencies and its DLL is copied into the signing output before the signed library is built and packed.
+`build.sh` uses the bootstrapped .NET 10 SDK unless `JB_DOTNET` names a dotnet executable. MinVer supplies the upstream version for the checked-out source; the build preserves its three numeric components and appends the TeamCity build counter as the fourth component. The source generator is built with upstream dependencies and its DLL is copied into the signing output before the signed library is built and packed.
 
 ## The lock
 
